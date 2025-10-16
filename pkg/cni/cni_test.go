@@ -72,7 +72,7 @@ var _ = Describe("CNI", func() {
 				NetAttachDefConfig: `invalid json`,
 			}
 
-			_, err := runtime.AttachNetwork(ctx, pod, netNS, invalidConfig)
+			_, _, err := runtime.AttachNetwork(ctx, pod, netNS, invalidConfig)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to GetCNIConfigFromSpec"))
@@ -84,7 +84,7 @@ var _ = Describe("CNI", func() {
 				NetAttachDefConfig: `{}`,
 			}
 
-			_, err := runtime.AttachNetwork(ctx, pod, netNS, emptyConfig)
+			_, _, err := runtime.AttachNetwork(ctx, pod, netNS, emptyConfig)
 
 			Expect(err).To(HaveOccurred())
 		})
@@ -184,7 +184,7 @@ var _ = Describe("CNI", func() {
 			}
 
 			for _, device := range devices {
-				_, err := runtime.AttachNetwork(ctx, pod, netNS, device)
+				_, _, err := runtime.AttachNetwork(ctx, pod, netNS, device)
 				Expect(err).To(HaveOccurred()) // Expected to fail due to invalid config
 			}
 		})

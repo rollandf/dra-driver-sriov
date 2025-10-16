@@ -29,6 +29,8 @@ type PreparedClaimsByPodUID map[k8stypes.UID]PreparedDevicesByClaimID
 type NetworkDataChanStruct struct {
 	PreparedDevice    *PreparedDevice
 	NetworkDeviceData *resourceapi.NetworkDeviceData
+	CNIConfig         map[string]interface{}
+	CNIResult         map[string]interface{}
 }
 type NetworkDataChanStructList []*NetworkDataChanStruct
 

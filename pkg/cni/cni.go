@@ -21,12 +21,14 @@ package cni
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/SchSeba/dra-driver-sriov/pkg/types"
 	"github.com/containerd/nri/pkg/api"
 	"github.com/containernetworking/cni/libcni"
+	cni100 "github.com/containernetworking/cni/pkg/types/100"
 	netattdefclientutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
 	resourcev1 "k8s.io/api/resource/v1"
 	"k8s.io/klog/v2"
@@ -63,7 +65,7 @@ func New(
 // to update the ResourceClaim's status with allocated device information.
 // If a request fails, an error is returned together with the previous successful device status up to date.
 // If the status of a device is already set, CNI ADD will be skipped and the existing status will be preserved.
-func (rntm *Runtime) AttachNetwork(ctx context.Context, pod *api.PodSandbox, podNetworkNamespace string, deviceConfig *types.PreparedDevice) (*resourcev1.NetworkDeviceData, error) {
+func (rntm *Runtime) AttachNetwork(ctx context.Context, pod *api.PodSandbox, podNetworkNamespace string, deviceConfig *types.PreparedDevice) (*resourcev1.NetworkDeviceData, map[string]interface{}, error) {
 	rt := &libcni.RuntimeConf{
 		ContainerID: pod.Id,
 		NetNS:       podNetworkNamespace,
@@ -78,25 +80,45 @@ func (rntm *Runtime) AttachNetwork(ctx context.Context, pod *api.PodSandbox, pod
 	}
 	rawNetConf, err := netattdefclientutils.GetCNIConfigFromSpec(deviceConfig.NetAttachDefConfig, rntm.DriverName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to GetCNIConfigFromSpec: %v", err)
+		return nil, nil, fmt.Errorf("failed to GetCNIConfigFromSpec: %v", err)
 	}
 
 	pluginConf, err := libcni.NetworkPluginConfFromBytes(rawNetConf)
 	if err != nil {
-		return nil, fmt.Errorf("failed to NetworkPluginConfFromBytes: %v", err)
+		return nil, nil, fmt.Errorf("failed to NetworkPluginConfFromBytes: %v", err)
 	}
 	klog.FromContext(ctx).V(3).Info("Runtime.AttachNetwork", "deviceConfig", deviceConfig)
 
 	cniResult, err := rntm.CNIConfig.AddNetwork(ctx, pluginConf, rt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to AddNetwork: %v", err)
+		return nil, nil, fmt.Errorf("failed to AddNetwork: %v", err)
 	}
 	if cniResult == nil {
-		return nil, fmt.Errorf("cni result is nil")
+		return nil, nil, fmt.Errorf("cni result is nil")
 	}
 
 	klog.FromContext(ctx).V(3).Info("Runtime.AttachedNetwork", "cniResult", cniResult)
-	return cniResultToNetworkData(cniResult)
+	// Convert to NetworkDeviceData (minimal info)
+	netData, err := cniResultToNetworkData(cniResult)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Convert full CNI 1.0.0 result to a generic map to avoid information loss
+	cni100Result, err := cni100.NewResultFromResult(cniResult)
+	if err != nil {
+		return netData, nil, fmt.Errorf("failed to convert CNI result to 1.0.0: %v", err)
+	}
+	raw, err := json.Marshal(cni100Result)
+	if err != nil {
+		return netData, nil, fmt.Errorf("failed to marshal CNI result: %v", err)
+	}
+	var resultMap map[string]interface{}
+	if err := json.Unmarshal(raw, &resultMap); err != nil {
+		return netData, nil, fmt.Errorf("failed to unmarshal CNI result into map: %v", err)
+	}
+
+	return netData, resultMap, nil
 }
 
 // DetachNetworks detaches all network interfaces associated with a given pod.

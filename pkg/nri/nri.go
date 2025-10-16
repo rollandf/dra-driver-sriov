@@ -2,6 +2,7 @@ package nri
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/SchSeba/dra-driver-sriov/pkg/cni"
@@ -14,6 +15,7 @@ import (
 	resourceapi "k8s.io/api/resource/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
@@ -30,8 +32,6 @@ type Plugin struct {
 	k8sClient                   flags.ClientSets
 	networkDeviceDataUpdateChan chan types.NetworkDataChanStructList
 	interfacePrefix             string
-	// PodResourceStore PodResourceStore
-	// UpdateStatusFunc UpdateStatus
 }
 
 // NewNRIPlugin creates a new NRI plugin.
@@ -103,14 +103,25 @@ func (p *Plugin) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 
 	networkDevicesData := types.NetworkDataChanStructList{}
 	for _, device := range devices {
-		networkDeviceData, err := p.cniRuntime.AttachNetwork(ctx, pod, networkNamespace, device)
+		networkDeviceData, cniResultMap, err := p.cniRuntime.AttachNetwork(ctx, pod, networkNamespace, device)
 		if err != nil {
 			logger.Error(err, "Failed to attach network", "deviceName", device.Device.DeviceName, "pod.UID", pod.Uid, "pod.Name", pod.Name, "pod.Namespace", pod.Namespace)
 			return fmt.Errorf("failed to attach network: %w", err)
 		}
+		// Parse NetAttachDefConfig into map[string]interface{} for CNIConfig
+		cniConfigMap := map[string]interface{}{}
+		if device.NetAttachDefConfig != "" {
+			if err := json.Unmarshal([]byte(device.NetAttachDefConfig), &cniConfigMap); err != nil {
+				logger.V(2).Info("Failed to unmarshal NetAttachDefConfig, proceeding with empty CNIConfig", "error", err.Error())
+				cniConfigMap = map[string]interface{}{}
+			}
+		}
+
 		networkDevicesData = append(networkDevicesData, &types.NetworkDataChanStruct{
 			PreparedDevice:    device,
 			NetworkDeviceData: networkDeviceData,
+			CNIConfig:         cniConfigMap,
+			CNIResult:         cniResultMap,
 		})
 		logger.Info("Attached network", "deviceName", device.Device.DeviceName, "pod.UID", pod.Uid, "pod.Name", pod.Name, "pod.Namespace", pod.Namespace, "networkDeviceData", networkDeviceData)
 	}
@@ -183,6 +194,19 @@ func (p *Plugin) updateNetworkDeviceData(ctx context.Context, networkDataChanStr
 				continue
 			}
 			claim.Status.Devices[idx].NetworkData = networkDataChanStruct.NetworkDeviceData
+
+			// Build combined Data: { vfConfig, cniConfig, cniResult }
+			combined := map[string]interface{}{
+				"vfConfig":  networkDataChanStruct.PreparedDevice.Config,
+				"cniConfig": networkDataChanStruct.CNIConfig,
+				"cniResult": networkDataChanStruct.CNIResult,
+			}
+			raw, err := json.Marshal(combined)
+			if err != nil {
+				logger.V(2).Info("Failed to marshal combined Data, skipping Data update", "error", err.Error())
+			} else {
+				claim.Status.Devices[idx].Data = &runtime.RawExtension{Raw: raw}
+			}
 		}
 
 		err = p.updateClaimNetworkDataWithRetry(ctx, claim)
