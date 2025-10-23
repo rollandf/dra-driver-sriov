@@ -37,6 +37,7 @@ type Manager struct {
 	// can be cleared without touching discovery attributes. Presence of a
 	// device key also indicates that the device is advertised (policy-matched).
 	policyAttrKeys map[string]map[resourceapi.QualifiedName]bool
+	configurationMode      string
 }
 
 func NewManager(config *drasriovtypes.Config, cdi *cdi.Handler) (*Manager, error) {
@@ -50,6 +51,7 @@ func NewManager(config *drasriovtypes.Config, cdi *cdi.Handler) (*Manager, error
 		defaultInterfacePrefix: config.Flags.DefaultInterfacePrefix,
 		cdi:                    cdi,
 		allocatable:            allocatable,
+		configurationMode:      config.Flags.ConfigurationMode,
 	}
 
 	return state, nil
@@ -105,7 +107,7 @@ func (s *Manager) prepareDevices(ctx context.Context, ifNameIndex *int,
 
 		config, ok := resultsConfig[result.Request]
 		if !ok {
-			return nil, fmt.Errorf("config not found for request: %s", result.Request)
+			config = configapi.DefaultVfConfig()
 		}
 
 		// make changes if needed
@@ -144,20 +146,23 @@ func (s *Manager) applyConfigOnDevice(ctx context.Context, ifNameIndex *int, cla
 		return nil, fmt.Errorf("device %s not found in allocatable devices", result.Device)
 	}
 
-	netAttachDefNamespace := claim.GetNamespace()
-	if config.NetAttachDefNamespace != "" {
-		netAttachDefNamespace = config.NetAttachDefNamespace
-	}
-
-	netAttachDefRawConfig, err := s.getNetAttachDefRawConfig(ctx, netAttachDefNamespace, config.NetAttachDefName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting net attach def raw config: %w", err)
-	}
-	// add to sriov-cni compatible netconf the deviceID (PCI address)
+	var netAttachDefRawConfig string
+	var err error
 	pciAddress := *deviceInfo.Attributes[consts.AttributePciAddress].StringValue
-	netAttachDefRawConfig, err = drasriovtypes.AddDeviceIDToNetConf(netAttachDefRawConfig, pciAddress)
-	if err != nil {
-		return nil, fmt.Errorf("error converting net attach def config to sriov-cni format: %w", err)
+	if consts.ConfigurationMode(s.configurationMode) == consts.ConfigurationModeStandalone {
+		netAttachDefNamespace := claim.GetNamespace()
+		if config.NetAttachDefNamespace != "" {
+			netAttachDefNamespace = config.NetAttachDefNamespace
+		}
+		netAttachDefRawConfig, err = s.getNetAttachDefRawConfig(ctx, netAttachDefNamespace, config.NetAttachDefName)
+		if err != nil {
+			return nil, fmt.Errorf("error getting net attach def raw config: %w", err)
+		}
+		// add to sriov-cni compatible netconf the deviceID (PCI address)
+		netAttachDefRawConfig, err = drasriovtypes.AddDeviceIDToNetConf(netAttachDefRawConfig, pciAddress)
+		if err != nil {
+			return nil, fmt.Errorf("error converting net attach def config to sriov-cni format: %w", err)
+		}
 	}
 	// Bind device to driver if specified in config
 	originalDriver, err := host.GetHelpers().BindDeviceDriver(pciAddress, config)
@@ -237,7 +242,7 @@ func (s *Manager) applyConfigOnDevice(ctx context.Context, ifNameIndex *int, cla
 	ifName := config.IfName
 	// if the device name is not set, we use the default interface prefix
 	// and the interface index, we also bump the index.
-	if ifName == "" {
+	if consts.ConfigurationMode(s.configurationMode) == consts.ConfigurationModeStandalone && ifName == "" {
 		ifName = fmt.Sprintf("%s%d", s.defaultInterfacePrefix, *ifNameIndex)
 		*ifNameIndex++
 	}

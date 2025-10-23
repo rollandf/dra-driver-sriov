@@ -3,6 +3,7 @@ package devicestate
 import (
 	"context"
 	"fmt"
+	"os"
 
 	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	. "github.com/onsi/ginkgo/v2"
@@ -11,6 +12,7 @@ import (
 	resourceapi "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -969,4 +971,48 @@ var _ = Describe("Manager", func() {
 			Expect(envs).To(BeNil())
 		})
 	})
+	Context("MULTUS/STANDALONE behavior", func() {
+		It("skips ifName generation and NetAttachDef fetch in MULTUS", func() {
+			tmp, err := os.MkdirTemp("", "cdi-root")
+			Expect(err).ToNot(HaveOccurred())
+			defer os.RemoveAll(tmp)
+			cdiHandler, err := cdi.NewHandler(tmp)
+			Expect(err).ToNot(HaveOccurred())
+
+			s := &Manager{
+				k8sClient:              flags.ClientSets{},
+				defaultInterfacePrefix: "vfnet",
+				cdi:                    cdiHandler,
+				allocatable: drasriovtypes.AllocatableDevices{
+					"devA": {
+						Attributes: map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
+							"sriovnetwork.k8snetworkplumbingwg.io/pciAddress": {StringValue: strPtr("0000:00:00.1")},
+						},
+					},
+				},
+				configurationMode: string(consts.ConfigurationModeMultus),
+			}
+
+			claim := &resourceapi.ResourceClaim{
+				ObjectMeta: metav1.ObjectMeta{Name: "claim1", Namespace: "ns1"},
+				Status: resourceapi.ResourceClaimStatus{
+					ReservedFor: []resourceapi.ResourceClaimConsumerReference{{UID: k8stypes.UID("poduid-1")}},
+				},
+			}
+			cfg := &configapi.VfConfig{NetAttachDefName: "nad1"} // should be ignored in MULTUS
+			ifIndex := 0
+			res := &resourceapi.DeviceRequestAllocationResult{Device: "devA", Pool: "pool1", Request: "req1"}
+
+			pd, err := s.applyConfigOnDevice(context.Background(), &ifIndex, claim, cfg, res)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pd).ToNot(BeNil())
+			// ifName should remain empty and index unchanged
+			Expect(pd.IfName).To(Equal(""))
+			Expect(ifIndex).To(Equal(0))
+			// NetAttachDefConfig should be empty
+			Expect(pd.NetAttachDefConfig).To(BeEmpty())
+		})
+	})
 })
+
+func strPtr(s string) *string { return &s }
