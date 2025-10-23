@@ -144,11 +144,21 @@ The kubelet plugin runs as a DaemonSet on all nodes where SR-IOV devices should 
 | `kubeletPlugin.nriPluginName` | string | `dra-driver-sriov` | Name of the NRI plugin |
 | `kubeletPlugin.nriPluginIndex` | int | `42` | Index of the NRI plugin (determines execution order) |
 | `kubeletPlugin.defaultInterfacePrefix` | string | `vfnet` | Default prefix for network interface names |
+| `kubeletPlugin.configurationMode` | string | `STANDALONE` | How the driver attaches networks. See [CONFIGURATION_MODE](#configuration_mode) for supported options. |
 | `kubeletPlugin.containers.init.securityContext` | object | `{}` | Security context for init container |
 | `kubeletPlugin.containers.init.resources` | object | `{}` | Resource requests/limits for init container |
 | `kubeletPlugin.containers.plugin.securityContext` | object | `{"privileged":true}` | Security context for plugin container (requires privileged) |
 | `kubeletPlugin.containers.plugin.resources` | object | `{}` | Resource requests/limits for plugin container |
 | `kubeletPlugin.containers.plugin.healthcheckPort` | int | `-1` | Port for health check (disabled if negative) |
+
+#### CONFIGURATION_MODE {#configuration_mode}
+
+`kubeletPlugin.configurationMode` controls how the driver attaches SR-IOV networks to pods. Set via the `CONFIGURATION_MODE` environment variable in the plugin container.
+
+| Value | Description |
+| ----- | ----------- |
+| `STANDALONE` | **(default)** The driver runs the SR-IOV CNI itself via the NRI (Node Resource Interface) plugin. Use when Multus is not in the pod network chain. Requires NRI to be enabled on the container runtime. |
+| `MULTUS` | The driver only prepares devices and updates the ResourceClaim; it does not run CNI. Multus is responsible for invoking the SR-IOV delegate CNI. Use when Multus is the primary CNI and attaches additional networks. NRI plugin is disabled in this mode. |
 
 ### Logging Parameters
 

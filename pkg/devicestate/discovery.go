@@ -205,6 +205,9 @@ func DiscoverSriovDevices() (types.AllocatableDevices, error) {
 				consts.AttributeNUMANode: {
 					IntValue: numaNodeIntPtr,
 				},
+				consts.AttributeMultusDeviceID: {
+					StringValue: ptr.To(vfInfo.PciAddress),
+				},
 			}
 
 			resourceList[deviceName] = resourceapi.Device{

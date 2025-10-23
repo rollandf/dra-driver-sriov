@@ -48,6 +48,9 @@ const (
 	DraNetCompatPrefix = "dra.net"
 	AttributeNUMANode  = DraNetCompatPrefix + "/numaNode"
 
+	MultusAttributePrefix   = "k8s.cni.cncf.io"
+	AttributeMultusDeviceID = MultusAttributePrefix + "/deviceID"
+
 	// Network device constants
 	NetClass  = 0x02 // Network controller class
 	SysBusPci = "/sys/bus/pci/devices"
@@ -65,6 +68,13 @@ const (
 var (
 	// AttributePCIeRoot identifies the PCIe root complex of the device
 	AttributePCIeRoot resourceapi.QualifiedName = deviceattribute.StandardDeviceAttributePCIeRoot
+)
+
+type ConfigurationMode string
+
+const (
+	ConfigurationModeStandalone ConfigurationMode = "STANDALONE"
+	ConfigurationModeMultus     ConfigurationMode = "MULTUS"
 )
 
 var Backoff = wait.Backoff{
