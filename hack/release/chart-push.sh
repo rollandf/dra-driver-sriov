@@ -55,3 +55,27 @@ helm registry login ghcr.io -u ${GITHUB_REPO_OWNER} -p ${GITHUB_TOKEN}
 
 echo "Pushing ${HELM_CHART_TARBALL} to oci://ghcr.io/${GITHUB_REPO_OWNER}"
 helm push ${HELM_CHART_TARBALL} oci://ghcr.io/${GITHUB_REPO_OWNER}
+
+# For main branch builds, also push as "latest"
+if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    echo "Also pushing chart as 0.0.0-latest with image tag latest"
+    
+    BASE_DIR=${PWD}
+    YQ_CMD="${BASE_DIR}/bin/yq"
+    
+    # Update Chart.yaml to 0.0.0-latest
+    ${YQ_CMD} -i ".version = \"0.0.0-latest\"" ${HELM_CHART}/Chart.yaml
+    
+    # Update image tag to "latest" (aligns with container image latest tag)
+    ${YQ_CMD} -i ".image.tag = \"latest\"" ${HELM_CHART}/values.yaml
+    
+    # Package with latest version
+    HELM_CHART_TARBALL_LATEST="dra-driver-sriov-chart-0.0.0-latest.tgz"
+    helm package ${HELM_CHART}
+    
+    # Push latest version
+    echo "Pushing ${HELM_CHART_TARBALL_LATEST} to oci://ghcr.io/${GITHUB_REPO_OWNER}"
+    helm push ${HELM_CHART_TARBALL_LATEST} oci://ghcr.io/${GITHUB_REPO_OWNER}
+    
+    echo "Successfully pushed chart version 0.0.0-latest with image tag latest"
+fi
