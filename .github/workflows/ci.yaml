@@ -106,6 +106,9 @@ jobs:
   build-container:
     name: Build Container
     runs-on: ubuntu-latest
+    # Only build on pull requests, not on pushes to main
+    # (main pushes are handled by release.yaml with multi-arch builds)
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
