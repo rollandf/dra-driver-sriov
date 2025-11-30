@@ -186,6 +186,10 @@ func DiscoverSriovDevices() (types.AllocatableDevices, error) {
 					consts.AttributeParentPciAddress: {
 						StringValue: ptr.To(pfInfo.ParentPciAddress),
 					},
+					// Standard Kubernetes PCI address attribute
+					consts.AttributeStandardPciAddress: {
+						StringValue: ptr.To(vfInfo.PciAddress),
+					},
 				},
 			}
 		}

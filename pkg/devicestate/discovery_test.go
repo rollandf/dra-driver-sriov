@@ -96,11 +96,13 @@ var _ = Describe("DiscoverSriovDevices", func() {
 			Expect(dev1.Attributes[consts.AttributeNumaNode].IntValue).To(Equal(ptr.To(int64(0))))
 			Expect(dev1.Attributes[consts.AttributePCIeRoot].StringValue).To(Equal(ptr.To("pci0000:00")))
 			Expect(dev1.Attributes[consts.AttributeParentPciAddress].StringValue).To(Equal(ptr.To("0000:00:01.0")))
+			Expect(dev1.Attributes[consts.AttributeStandardPciAddress].StringValue).To(Equal(ptr.To("0000:01:00.1")))
 
 			// Check second VF
 			dev2 := devices["0000-01-00-2"]
 			Expect(dev2.Name).To(Equal("0000-01-00-2"))
 			Expect(dev2.Attributes[consts.AttributeVFID].IntValue).To(Equal(ptr.To(int64(1))))
+			Expect(dev2.Attributes[consts.AttributeStandardPciAddress].StringValue).To(Equal(ptr.To("0000:01:00.2")))
 		})
 
 		It("should discover multiple PFs with VFs", func() {
@@ -160,6 +162,7 @@ var _ = Describe("DiscoverSriovDevices", func() {
 			Expect(dev1.Attributes[consts.AttributeEswitchMode].StringValue).To(Equal(ptr.To("legacy")))
 			Expect(dev1.Attributes[consts.AttributeNumaNode].IntValue).To(Equal(ptr.To(int64(0))))
 			Expect(dev1.Attributes[consts.AttributePCIeRoot].StringValue).To(Equal(ptr.To("pci0000:00")))
+			Expect(dev1.Attributes[consts.AttributeStandardPciAddress].StringValue).To(Equal(ptr.To("0000:01:00.1")))
 
 			// Check Mellanox VF
 			dev2 := devices["0000-02-00-1"]
@@ -168,6 +171,7 @@ var _ = Describe("DiscoverSriovDevices", func() {
 			Expect(dev2.Attributes[consts.AttributeEswitchMode].StringValue).To(Equal(ptr.To("switchdev")))
 			Expect(dev2.Attributes[consts.AttributeNumaNode].IntValue).To(Equal(ptr.To(int64(1))))
 			Expect(dev2.Attributes[consts.AttributePCIeRoot].StringValue).To(Equal(ptr.To("pci0000:00")))
+			Expect(dev2.Attributes[consts.AttributeStandardPciAddress].StringValue).To(Equal(ptr.To("0000:02:00.1")))
 		})
 
 		It("should handle NUMA node detection failure with default", func() {
@@ -202,6 +206,8 @@ var _ = Describe("DiscoverSriovDevices", func() {
 			// NUMA should default to 0
 			dev := devices["0000-01-00-1"]
 			Expect(dev.Attributes[consts.AttributeNumaNode].IntValue).To(Equal(ptr.To(int64(0))))
+			// Standard PCI address should still be set
+			Expect(dev.Attributes[consts.AttributeStandardPciAddress].StringValue).To(Equal(ptr.To("0000:01:00.1")))
 		})
 
 		It("should handle parent PCI address detection failure gracefully", func() {
@@ -236,6 +242,8 @@ var _ = Describe("DiscoverSriovDevices", func() {
 			// Parent PCI address should be empty
 			dev := devices["0000-01-00-1"]
 			Expect(dev.Attributes[consts.AttributeParentPciAddress].StringValue).To(Equal(ptr.To("")))
+			// Standard PCI address should still be set
+			Expect(dev.Attributes[consts.AttributeStandardPciAddress].StringValue).To(Equal(ptr.To("0000:01:00.1")))
 		})
 	})
 
