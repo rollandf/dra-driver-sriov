@@ -58,7 +58,7 @@ var _ = Describe("Consts", func() {
 			// These attributes should use the upstream standard prefix
 			Expect(consts.AttributeNumaNode).To(Equal(deviceattribute.StandardDeviceAttributePrefix + "numaNode"))
 			Expect(string(consts.AttributePCIeRoot)).To(Equal(deviceattribute.StandardDeviceAttributePrefix + "pcieRoot"))
-			Expect(consts.AttributeStandardPciAddress).To(Equal(deviceattribute.StandardDeviceAttributePrefix + "pciAddress"))
+			Expect(consts.AttributeStandardPciAddress).To(Equal(deviceattribute.StandardDeviceAttributePrefix + "pciBusID"))
 		})
 
 		It("should have correct network device constants", func() {
