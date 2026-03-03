@@ -1,0 +1,45 @@
+# Copyright 2025 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG GOLANG_VERSION=1.25
+
+FROM --platform=$BUILDPLATFORM golang:${GOLANG_VERSION} AS build
+
+ARG GOPROXY
+ENV GOPROXY=$GOPROXY
+ARG TARGETARCH
+
+WORKDIR /go/src/github.com/k8snetworkplumbingwg/dra-driver-sriov
+COPY . .
+
+RUN mkdir /artifacts
+RUN GOARCH=${TARGETARCH} make PREFIX=/artifacts cmds
+RUN rm -rf .git
+
+FROM alpine:3 AS pkgs
+RUN apk add --no-cache hwdata-pci
+
+ARG BASE_IMAGE_GO_DISTROLESS
+FROM ${BASE_IMAGE_GO_DISTROLESS:-nvcr.io/nvidia/distroless/go:v4.0.2}
+
+LABEL org.opencontainers.image.source=https://github.com/k8snetworkplumbingwg/dra-driver-sriov
+LABEL org.opencontainers.image.description="Dynamic Resource Allocation (DRA) resource driver for SR-IOV devices"
+LABEL org.opencontainers.image.licenses=Apache-2.0
+LABEL org.opencontainers.image.title="Dynamic Resource Allocation (DRA) resource driver for SR-IOV devices"
+LABEL org.opencontainers.image.vendor="sriovnetwork.k8snetworkplumbingwg.io"
+LABEL io.k8s.display-name="Dynamic Resource Allocation (DRA) resource driver for SR-IOV devices"
+
+COPY --from=pkgs /usr/share/hwdata/pci.ids /usr/share/hwdata/pci.ids
+COPY --from=build /artifacts/dra-driver-sriov /usr/bin/dra-driver-sriov
+COPY --from=build /go/src/github.com/k8snetworkplumbingwg/dra-driver-sriov ./src
