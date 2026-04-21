@@ -71,7 +71,7 @@ GOOS=linux GOARCH=amd64 make cmds
 Deploy the DRA driver using Helm:
 
 ```bash
-helm upgrade -i dra-driver-sriov --create-namespace -n dra-sriov-driver ./deployments/helm/dra-driver-sriov/
+helm upgrade -i dra-driver-sriov --create-namespace -n dra-driver-sriov ./deployments/helm/dra-driver-sriov/
 ```
 
 ### Configuration Options
@@ -92,7 +92,7 @@ Example custom deployment:
 
 ```bash
 helm upgrade -i dra-driver-sriov \
-  --create-namespace -n dra-sriov-driver \
+  --create-namespace -n dra-driver-sriov \
   --set image.tag=v0.1.0 \
   --set logging.level=5 \
   --set driver.defaultInterfacePrefix=net \
@@ -149,7 +149,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: SriovResourcePolicy
 metadata:
   name: all-devices
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
 spec:
   configs:
   - {}
@@ -167,7 +167,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: DeviceAttributes
 metadata:
   name: eth0-attrs
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
   labels:
     pool: eth0-resource
 spec:
@@ -179,7 +179,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: DeviceAttributes
 metadata:
   name: eth1-attrs
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
   labels:
     pool: eth1-resource
 spec:
@@ -192,7 +192,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: SriovResourcePolicy
 metadata:
   name: example-policy
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
 spec:
   nodeSelector:
     nodeSelectorTerms:

@@ -87,7 +87,7 @@ func newApp() *cli.App {
 		&cli.StringFlag{
 			Name:        "namespace",
 			Usage:       "Namespace where the driver should watch for SriovResourcePolicy resources.",
-			Value:       "dra-sriov-driver",
+			Value:       "dra-driver-sriov",
 			Destination: &flagsOptions.Namespace,
 			EnvVars:     []string{"NAMESPACE"},
 		},

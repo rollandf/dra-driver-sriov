@@ -90,7 +90,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: SriovResourcePolicy
 metadata:
   name: intel-high-perf-nics
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
 spec:
   nodeSelector:
     nodeSelectorTerms:
@@ -116,7 +116,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: DeviceAttributes
 metadata:
   name: intel-high-perf-attrs
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
   labels:
     pool: intel-high-perf
 spec:
@@ -295,7 +295,7 @@ Attributes are merged. When the same key appears in multiple objects, the value 
 
 1. **Backup Existing Resources**
    ```bash
-   kubectl get sriovresourcefilters -n dra-sriov-driver -o yaml > backup.yaml
+   kubectl get sriovresourcefilters -n dra-driver-sriov -o yaml > backup.yaml
    ```
 
 2. **Update CRDs**
@@ -312,7 +312,7 @@ Attributes are merged. When the same key appears in multiple objects, the value 
 4. **Upgrade Driver**
    ```bash
    helm upgrade dra-driver-sriov ./deployments/helm/dra-driver-sriov \
-     --namespace dra-sriov-driver
+     --namespace dra-driver-sriov
    ```
 
 ### Breaking Changes

@@ -5,7 +5,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: SriovResourcePolicy
 metadata:
   name: all-devices
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
 spec:
   configs:
   - {}
