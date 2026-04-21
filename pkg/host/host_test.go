@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/vishvananda/netlink"
 	"go.uber.org/mock/gomock"
 
 	configapi "github.com/k8snetworkplumbingwg/dra-driver-sriov/pkg/api/virtualfunction/v1alpha1"
@@ -171,10 +172,72 @@ var _ = Describe("Host", func() {
 		})
 
 		Context("GetNicSriovMode", func() {
-			It("should return legacy mode", func() {
-				tearDown = fs.Use()
+			var (
+				mockCtrl       *gomock.Controller
+				mockNetlinkOps *mock_host.MockNetlinkOps
+				hostImpl       *host.Host
+			)
 
-				mode := h.GetNicSriovMode("0000:01:00.0")
+			BeforeEach(func() {
+				mockCtrl = gomock.NewController(GinkgoT())
+				mockNetlinkOps = mock_host.NewMockNetlinkOps(mockCtrl)
+				hostImpl = host.NewHost().(*host.Host)
+				hostImpl.SetNetlinkOps(mockNetlinkOps)
+			})
+
+			AfterEach(func() {
+				mockCtrl.Finish()
+			})
+
+			It("should return 'legacy' when devlink reports legacy mode", func() {
+				mockNetlinkOps.EXPECT().
+					DevLinkGetDeviceByName("pci", "0000:01:00.0").
+					Return(&netlink.DevlinkDevice{
+						Attrs: netlink.DevlinkDevAttrs{
+							Eswitch: netlink.DevlinkDevEswitchAttr{Mode: "legacy"},
+						},
+					}, nil).
+					Times(1)
+
+				mode := hostImpl.GetNicSriovMode("0000:01:00.0")
+				Expect(mode).To(Equal("legacy"))
+			})
+
+			It("should return 'switchdev' when devlink reports switchdev mode", func() {
+				mockNetlinkOps.EXPECT().
+					DevLinkGetDeviceByName("pci", "0000:01:00.0").
+					Return(&netlink.DevlinkDevice{
+						Attrs: netlink.DevlinkDevAttrs{
+							Eswitch: netlink.DevlinkDevEswitchAttr{Mode: "switchdev"},
+						},
+					}, nil).
+					Times(1)
+
+				mode := hostImpl.GetNicSriovMode("0000:01:00.0")
+				Expect(mode).To(Equal("switchdev"))
+			})
+
+			It("should return 'legacy' when devlink query fails", func() {
+				mockNetlinkOps.EXPECT().
+					DevLinkGetDeviceByName("pci", "0000:01:00.0").
+					Return(nil, fmt.Errorf("no such device")).
+					Times(1)
+
+				mode := hostImpl.GetNicSriovMode("0000:01:00.0")
+				Expect(mode).To(Equal("legacy"))
+			})
+
+			It("should return 'legacy' when devlink returns an empty mode", func() {
+				mockNetlinkOps.EXPECT().
+					DevLinkGetDeviceByName("pci", "0000:01:00.0").
+					Return(&netlink.DevlinkDevice{
+						Attrs: netlink.DevlinkDevAttrs{
+							Eswitch: netlink.DevlinkDevEswitchAttr{Mode: ""},
+						},
+					}, nil).
+					Times(1)
+
+				mode := hostImpl.GetNicSriovMode("0000:01:00.0")
 				Expect(mode).To(Equal("legacy"))
 			})
 		})

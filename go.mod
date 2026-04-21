@@ -24,6 +24,7 @@ require (
 	k8s.io/kubelet v0.34.3
 	k8s.io/kubernetes v1.34.3
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
+	github.com/vishvananda/netlink v1.3.1
 	sigs.k8s.io/controller-runtime v0.23.3
 	tags.cncf.io/container-device-interface v1.1.0
 	tags.cncf.io/container-device-interface/specs-go v1.1.0
@@ -77,7 +78,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.10.0 // indirect
 	github.com/tetratelabs/wazero v1.10.1 // indirect
-	github.com/vishvananda/netlink v1.3.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect

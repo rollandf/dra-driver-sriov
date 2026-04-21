@@ -127,6 +127,7 @@ type Interface interface {
 type Host struct {
 	log          klog.Logger
 	rdmaProvider RdmaProvider
+	netlinkOps   NetlinkOps
 }
 
 // NewHost creates a new Host instance
@@ -134,6 +135,7 @@ func NewHost() Interface {
 	return &Host{
 		log:          klog.FromContext(context.Background()).WithName("Host"),
 		rdmaProvider: newRdmaProvider(),
+		netlinkOps:   newNetlinkOps(),
 	}
 }
 
@@ -160,6 +162,12 @@ func GetHelpers() Interface {
 // This is primarily used for injecting mock providers in unit tests
 func (h *Host) SetRdmaProvider(provider RdmaProvider) {
 	h.rdmaProvider = provider
+}
+
+// SetNetlinkOps sets the netlink operations provider for a Host instance.
+// This is primarily used for injecting mock providers in unit tests.
+func (h *Host) SetNetlinkOps(ops NetlinkOps) {
+	h.netlinkOps = ops
 }
 
 // SR-IOV Detection Functions
@@ -263,12 +271,21 @@ func (h *Host) TryGetInterfaceName(pciAddr string) string {
 	return fInfos[0].Name()
 }
 
-// GetNicSriovMode returns the interface mode (simplified implementation)
-// This is a simplified version that returns "legacy" mode as fallback
-func (h *Host) GetNicSriovMode(_ string) string {
-	// For simplicity, always return legacy mode
-	// A full implementation would use netlink to query the eswitch mode
-	return "legacy"
+// GetNicSriovMode returns the SR-IOV eswitch mode for the NIC at the given PCI address.
+// It queries the kernel via devlink (netlink) and returns the mode string (e.g. "legacy" or "switchdev").
+// Falls back to "legacy" if the device is not managed by devlink or the query fails.
+func (h *Host) GetNicSriovMode(pciAddr string) string {
+	dev, err := h.netlinkOps.DevLinkGetDeviceByName("pci", pciAddr)
+	if err != nil {
+		h.log.V(2).Info("GetNicSriovMode(): devlink query failed, defaulting to legacy",
+			"pciAddr", pciAddr, "err", err)
+		return "legacy"
+	}
+	mode := dev.Attrs.Eswitch.Mode
+	if mode == "" {
+		return "legacy"
+	}
+	return mode
 }
 
 // GetLinkType returns the link type for a given network interface
