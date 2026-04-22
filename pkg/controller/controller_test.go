@@ -70,7 +70,7 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 	bootstrapClient, err := client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "dra-sriov-driver"}}
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "dra-driver-sriov"}}
 	Expect(bootstrapClient.Create(ctx, ns)).To(Succeed())
 
 	node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: "test-node", Labels: map[string]string{"test": "true"}}}
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func(ctx SpecContext) {
 		},
 	)
 
-	reconciler = controller.NewSriovResourcePolicyReconciler(mgr.GetClient(), "test-node", "dra-sriov-driver", devState)
+	reconciler = controller.NewSriovResourcePolicyReconciler(mgr.GetClient(), "test-node", "dra-driver-sriov", devState)
 	Expect(reconciler.SetupWithManager(mgr)).To(Succeed())
 
 	var startCtx context.Context
@@ -157,7 +157,7 @@ var _ = Describe("SriovResourcePolicyReconciler (envtest)", func() {
 
 	It("should select policy with empty nodeSelector and advertise all devices", func(ctx SpecContext) {
 		policy := &sriovdrav1alpha1.SriovResourcePolicy{
-			ObjectMeta: metav1.ObjectMeta{Name: "rp-empty-selector", Namespace: "dra-sriov-driver"},
+			ObjectMeta: metav1.ObjectMeta{Name: "rp-empty-selector", Namespace: "dra-driver-sriov"},
 			Spec: sriovdrav1alpha1.SriovResourcePolicySpec{
 				Configs: []sriovdrav1alpha1.Config{{
 					ResourceFilters: nil,
@@ -187,7 +187,7 @@ var _ = Describe("SriovResourcePolicyReconciler (envtest)", func() {
 	It("should merge multiple matching policies", func(ctx SpecContext) {
 		// Create second policy matching the same node
 		policy := &sriovdrav1alpha1.SriovResourcePolicy{
-			ObjectMeta: metav1.ObjectMeta{Name: "rp-duplicate", Namespace: "dra-sriov-driver"},
+			ObjectMeta: metav1.ObjectMeta{Name: "rp-duplicate", Namespace: "dra-driver-sriov"},
 			Spec: sriovdrav1alpha1.SriovResourcePolicySpec{
 				Configs: []sriovdrav1alpha1.Config{{}},
 			},
@@ -202,7 +202,7 @@ var _ = Describe("SriovResourcePolicyReconciler (envtest)", func() {
 		// Clean up existing policies
 		for _, name := range []string{"rp-empty-selector", "rp-duplicate"} {
 			rp := &sriovdrav1alpha1.SriovResourcePolicy{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: "dra-sriov-driver", Name: name}, rp); err == nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: "dra-driver-sriov", Name: name}, rp); err == nil {
 				_ = k8sClient.Delete(ctx, rp)
 			}
 		}
@@ -214,7 +214,7 @@ var _ = Describe("SriovResourcePolicyReconciler (envtest)", func() {
 		da := &sriovdrav1alpha1.DeviceAttributes{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "da-test",
-				Namespace: "dra-sriov-driver",
+				Namespace: "dra-driver-sriov",
 				Labels:    map[string]string{"pool": "test-pool"},
 			},
 			Spec: sriovdrav1alpha1.DeviceAttributesSpec{
@@ -226,7 +226,7 @@ var _ = Describe("SriovResourcePolicyReconciler (envtest)", func() {
 		Expect(k8sClient.Create(ctx, da)).To(Succeed())
 
 		policy := &sriovdrav1alpha1.SriovResourcePolicy{
-			ObjectMeta: metav1.ObjectMeta{Name: "rp-with-attrs", Namespace: "dra-sriov-driver"},
+			ObjectMeta: metav1.ObjectMeta{Name: "rp-with-attrs", Namespace: "dra-driver-sriov"},
 			Spec: sriovdrav1alpha1.SriovResourcePolicySpec{
 				Configs: []sriovdrav1alpha1.Config{{
 					DeviceAttributesSelector: &metav1.LabelSelector{MatchLabels: map[string]string{"pool": "test-pool"}},
@@ -250,8 +250,8 @@ var _ = Describe("SriovResourcePolicyReconciler (envtest)", func() {
 	})
 
 	It("should requeue when node is missing (direct Reconcile call)", func(ctx SpecContext) {
-		bogus := controller.NewSriovResourcePolicyReconciler(k8sClient, "missing-node", "dra-sriov-driver", nil)
-		result, err := bogus.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "irrelevant", Namespace: "dra-sriov-driver"}})
+		bogus := controller.NewSriovResourcePolicyReconciler(k8sClient, "missing-node", "dra-driver-sriov", nil)
+		result, err := bogus.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "irrelevant", Namespace: "dra-driver-sriov"}})
 		Expect(err).To(BeNil())
 		Expect(result.RequeueAfter).NotTo(BeZero())
 	})

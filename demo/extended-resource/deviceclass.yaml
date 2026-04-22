@@ -3,7 +3,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: DeviceAttributes
 metadata:
   name: port1-attrs
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
   labels:
     pool: port1-vfs
 spec:
@@ -16,7 +16,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: DeviceAttributes
 metadata:
   name: port2-attrs
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
   labels:
     pool: port2-vfs
 spec:
@@ -29,7 +29,7 @@ apiVersion: sriovnetwork.k8snetworkplumbingwg.io/v1alpha1
 kind: SriovResourcePolicy
 metadata:
   name: dual-port-vfs
-  namespace: dra-sriov-driver
+  namespace: dra-driver-sriov
 spec:
   configs:
   - deviceAttributesSelector:

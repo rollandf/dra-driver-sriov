@@ -41,22 +41,22 @@ For additional information and methods for installing Helm, refer to the officia
 
 Install the latest stable release (recommended for production):
 ```bash
-helm install -n dra-sriov-driver --create-namespace dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
+helm install -n dra-driver-sriov --create-namespace dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
 ```
 
 Install a specific stable version:
 ```bash
-helm install -n dra-sriov-driver --create-namespace --version 1.0.0 dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
+helm install -n dra-driver-sriov --create-namespace --version 1.0.0 dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
 ```
 
 Install the latest from main branch (for testing):
 ```bash
-helm install -n dra-sriov-driver --create-namespace --version 0.0.0-latest dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
+helm install -n dra-driver-sriov --create-namespace --version 0.0.0-latest dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
 ```
 
 Install a specific commit from main branch:
 ```bash
-helm install -n dra-sriov-driver --create-namespace --version 0.0.0-a1b2c3d dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
+helm install -n dra-driver-sriov --create-namespace --version 0.0.0-a1b2c3d dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart
 ```
 
 #### Deploy from project sources
@@ -67,15 +67,15 @@ git clone https://github.com/k8snetworkplumbingwg/dra-driver-sriov.git
 cd dra-driver-sriov
 
 # Install Driver
-helm install -n dra-sriov-driver --create-namespace --wait dra-driver-sriov ./deployments/helm/dra-driver-sriov
+helm install -n dra-driver-sriov --create-namespace --wait dra-driver-sriov ./deployments/helm/dra-driver-sriov
 
 # View deployed resources
-kubectl -n dra-sriov-driver get pods
+kubectl -n dra-driver-sriov get pods
 ```
 
 In the case that [Pod Security Admission](https://kubernetes.io/docs/concepts/security/pod-security-admission/) is enabled, the driver namespace will require a security level of 'privileged'
 ```bash
-kubectl label ns dra-sriov-driver pod-security.kubernetes.io/enforce=privileged
+kubectl label ns dra-driver-sriov pod-security.kubernetes.io/enforce=privileged
 ```
 
 ### Chart Versioning
@@ -91,7 +91,7 @@ The Helm chart follows this versioning scheme:
 ### Uninstall
 
 ```bash
-helm uninstall -n dra-sriov-driver dra-driver-sriov
+helm uninstall -n dra-driver-sriov dra-driver-sriov
 ```
 
 ## Chart Parameters
@@ -165,7 +165,7 @@ The kubelet plugin runs as a DaemonSet on all nodes where SR-IOV devices should 
 
 ```bash
 helm install dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart \
-  -n dra-sriov-driver --create-namespace
+  -n dra-driver-sriov --create-namespace
 ```
 
 ### Installation with Custom Node Selection
@@ -174,7 +174,7 @@ Deploy the kubelet plugin only on nodes with SR-IOV hardware:
 
 ```bash
 helm install dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart \
-  -n dra-sriov-driver --create-namespace \
+  -n dra-driver-sriov --create-namespace \
   --set kubeletPlugin.nodeSelector."feature\.node\.kubernetes\.io/network-sriov\.capable"="true"
 ```
 
@@ -182,7 +182,7 @@ helm install dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-srio
 
 ```bash
 helm install dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart \
-  -n dra-sriov-driver --create-namespace \
+  -n dra-driver-sriov --create-namespace \
   --set logging.level=5 \
   --set logging.format=json
 ```
@@ -191,7 +191,7 @@ helm install dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-srio
 
 ```bash
 helm install dra-driver-sriov oci://ghcr.io/k8snetworkplumbingwg/dra-driver-sriov-chart \
-  -n dra-sriov-driver --create-namespace \
+  -n dra-driver-sriov --create-namespace \
   --set kubeletPlugin.containers.plugin.resources.requests.cpu=100m \
   --set kubeletPlugin.containers.plugin.resources.requests.memory=128Mi \
   --set kubeletPlugin.containers.plugin.resources.limits.cpu=500m \
