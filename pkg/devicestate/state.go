@@ -36,8 +36,8 @@ type Manager struct {
 	// policyAttrKeys tracks attribute keys set by policy per device, so they
 	// can be cleared without touching discovery attributes. Presence of a
 	// device key also indicates that the device is advertised (policy-matched).
-	policyAttrKeys map[string]map[resourceapi.QualifiedName]bool
-	configurationMode      string
+	policyAttrKeys    map[string]map[resourceapi.QualifiedName]bool
+	configurationMode string
 }
 
 func NewManager(config *drasriovtypes.Config, cdi *cdi.Handler) (*Manager, error) {
